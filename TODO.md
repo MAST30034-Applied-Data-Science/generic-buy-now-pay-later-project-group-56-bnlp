@@ -1,0 +1,2 @@
+- Add Script Specifiction onto README.md
+- Add `requirements.txt` for library dependencies
