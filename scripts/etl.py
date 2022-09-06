@@ -7,6 +7,9 @@ and save tit under 'data/curated' directory
 from pyspark.sql import SparkSession, functions as F
 import pandas as pd
 import nltk
+nltk.download('punkt')
+nltk.download('wordnet')
+nltk.download('omw-1.4')
 from nltk.corpus import wordnet
 from nltk.stem.wordnet import WordNetLemmatizer
 
