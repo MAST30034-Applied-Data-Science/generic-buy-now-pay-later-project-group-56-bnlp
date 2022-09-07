@@ -13,6 +13,7 @@ nltk.download('omw-1.4')
 from nltk.corpus import wordnet
 from nltk.stem.wordnet import WordNetLemmatizer
 
+
 # Create a spark session
 spark = (
     SparkSession.builder.appName("BNPL Project")
@@ -29,12 +30,35 @@ consumer = spark.read.csv("./data/tables/tbl_consumer.csv", sep = '|', header=Tr
 userdetails = spark.read.parquet("./data/tables/consumer_user_details.parquet")
 transaction_batch1 = spark.read.parquet("./data/tables/transactions_20210228_20210827_snapshot/")
 transaction_batch2 = spark.read.parquet("./data/tables/transactions_20210828_20220227_snapshot/")
+population = spark.read.option("header", True).csv('./data/tables/population_data.csv')
 # transaction_batch3 = spark.read.parquet("./data/tables/<insert_folder_name>_snapshot/")
 
 """
 Renaming columns, cleaning column
 and add columns accordingly
 """
+
+# External dataset 1: Estimated Region Population by SA2 Districts, 2021
+
+# Function to pre-process population data
+from pyspark.sql.types import IntegerType, LongType
+
+def population_preprocess(data):
+
+    cols_to_keep = ['sa2_maincode_2016', 'sa2_name_2016', 'erp_2021']
+    population_df = data.select(*cols_to_keep)
+
+    population_df = population_df \
+                    .withColumn("sa2_maincode_2016", F.col("sa2_maincode_2016").cast(LongType())) \
+                    .withColumn("erp_2021", F.col('erp_2021').cast(IntegerType()))
+
+    population_df = population_df \
+                    .withColumnRenamed('sa2_name_2016', 'suburb') \
+                    .withColumnRenamed('erp_2021', 'estimated_region_population_2021')
+                    
+    return population_df
+
+population = population_preprocess(population)
 
 # Merchant data
 merchants = merchants.withColumnRenamed("name", "merchant_name")\
