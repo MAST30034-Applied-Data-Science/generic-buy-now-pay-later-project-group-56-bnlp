@@ -1,6 +1,6 @@
 """ 
 This script transforms the raw data into clean data
-and save tit under 'data/curated' directory
+and saves it under 'data/curated' directory
 """
 
 #Importing required libraries
@@ -27,7 +27,9 @@ spark = (
 merchants = spark.read.parquet("./data/tables/tbl_merchants.parquet")
 consumer = spark.read.csv("./data/tables/tbl_consumer.csv", sep = '|', header=True)
 userdetails = spark.read.parquet("./data/tables/consumer_user_details.parquet")
-transactions = spark.read.parquet("./data/tables/transactions_20210228_20210827_snapshot/")
+transaction_batch1 = spark.read.parquet("./data/tables/transactions_20210228_20210827_snapshot/")
+transaction_batch2 = spark.read.parquet("./data/tables/transactions_20210828_20220227_snapshot/")
+# transaction_batch3 = spark.read.parquet("./data/tables/<insert_folder_name>_snapshot/")
 
 """
 Renaming columns, cleaning column
@@ -99,7 +101,8 @@ merchants_pd['category'] = merchants_pd['tag'].apply(assign_category)
 # Consumer Data
 consumer = consumer.select("state", "postcode", "gender", "consumer_id")
 
-# Transaction Data
+# Transaction Data (merging transaction batches together)
+transactions = transaction_batch1.union(transaction_batch2)
 transactions = transactions.withColumn('dollar_value', F.round('dollar_value',2))
 
 # Merging all dataset into one dataset
@@ -108,4 +111,5 @@ result = result.join(consumer, on="consumer_id", how="left")
 result = result.join(spark.createDataFrame(merchants_pd), on="merchant_abn", how="left")
 
 # Loading data
-result.write.parquet('./data/curated/process_data.parquet')
+result.write.mode('overwrite').parquet('./data/curated/process_data.parquet')
+
