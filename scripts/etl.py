@@ -49,7 +49,6 @@ def population_preprocess(data):
     population_df = data.select(*cols_to_keep)
 
     population_df = population_df \
-                    .withColumn("sa2_maincode_2016", F.col("sa2_maincode_2016").cast(LongType())) \
                     .withColumn("erp_2021", F.col('erp_2021').cast(IntegerType()))
 
     population_df = population_df \
