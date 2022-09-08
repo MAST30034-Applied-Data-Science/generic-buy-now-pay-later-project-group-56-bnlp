@@ -25,12 +25,12 @@ spark = (
 )
 
 # Loading all data sets
-merchants = spark.read.parquet("./data/tables/tbl_merchants.parquet")
-consumer = spark.read.csv("./data/tables/tbl_consumer.csv", sep = '|', header=True)
-userdetails = spark.read.parquet("./data/tables/consumer_user_details.parquet")
-transaction_batch1 = spark.read.parquet("./data/tables/transactions_20210228_20210827_snapshot/")
-transaction_batch2 = spark.read.parquet("./data/tables/transactions_20210828_20220227_snapshot/")
-population = spark.read.option("header", True).csv('./data/tables/population_data.csv')
+merchants = spark.read.parquet("../data/tables/tbl_merchants.parquet")
+consumer = spark.read.csv("../data/tables/tbl_consumer.csv", sep = '|', header=True)
+userdetails = spark.read.parquet("../data/tables/consumer_user_details.parquet")
+transaction_batch1 = spark.read.parquet("../data/tables/transactions_20210228_20210827_snapshot/")
+transaction_batch2 = spark.read.parquet("../data/tables/transactions_20210828_20220227_snapshot/")
+population = spark.read.option("header", True).csv('../data/tables/population_data.csv')
 # transaction_batch3 = spark.read.parquet("./data/tables/<insert_folder_name>_snapshot/")
 
 """
@@ -134,5 +134,5 @@ result = result.join(consumer, on="consumer_id", how="left")
 result = result.join(spark.createDataFrame(merchants_pd), on="merchant_abn", how="left")
 
 # Loading data
-result.write.mode('overwrite').parquet('./data/curated/process_data.parquet')
+result.write.mode('overwrite').parquet('../data/curated/process_data.parquet')
 
