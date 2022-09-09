@@ -55,6 +55,8 @@ def population_preprocess(data):
                     .withColumnRenamed('sa2_name_2016', 'suburb') \
                     .withColumnRenamed('erp_2021', 'estimated_region_population_2021')
                     
+    population_df = population_df.filter(F.col('estimated_region_population_2021') > 0)
+
     return population_df
 
 population = population_preprocess(population)
