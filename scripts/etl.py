@@ -13,6 +13,9 @@ nltk.download('omw-1.4')
 from nltk.corpus import wordnet
 from nltk.stem.wordnet import WordNetLemmatizer
 
+# import external dataset etl functions
+from etl_ext_datasets_funcs import etl_income, etl_population, join_ext_with_master
+
 
 # Create a spark session
 spark = (
@@ -30,7 +33,7 @@ consumer = spark.read.csv("../data/tables/tbl_consumer.csv", sep = '|', header=T
 userdetails = spark.read.parquet("../data/tables/consumer_user_details.parquet")
 transaction_batch1 = spark.read.parquet("../data/tables/transactions_20210228_20210827_snapshot/")
 transaction_batch2 = spark.read.parquet("../data/tables/transactions_20210828_20220227_snapshot/")
-population = spark.read.option("header", True).csv('../data/tables/population_data.csv')
+#population = spark.read.option("header", True).csv('../data/tables/population_data.csv')
 # transaction_batch3 = spark.read.parquet("./data/tables/<insert_folder_name>_snapshot/")
 
 """
@@ -59,7 +62,11 @@ def population_preprocess(data):
 
     return population_df
 
-population = population_preprocess(population)
+#population = population_preprocess(population)
+
+# read in processed external datasets
+population = etl_population()
+income = etl_income()
 
 # Merchant data
 merchants = merchants.withColumnRenamed("name", "merchant_name")\
@@ -166,6 +173,13 @@ result = result.filter((F.col("revenue") == "a")|(F.col("revenue") == "b")|(F.co
 result = result.withColumn("rate", F.col("rate").cast("double"))
 result = result.filter((F.col("rate") >= 0)&(F.col("rate") <= 100))
 
+# join external datasets with master
+result = join_ext_with_master(income_sdf=income,
+                               pop_sdf=population,
+                               transactions=result)
+#results.show()
+
 # Loading data
+print('Writing processed data to file...')
 result.write.mode('overwrite').parquet('../data/curated/process_data.parquet')
 
