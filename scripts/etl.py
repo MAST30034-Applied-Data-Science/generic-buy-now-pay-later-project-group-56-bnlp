@@ -169,6 +169,8 @@ transactions = transaction_batch1.union(transaction_batch2)
 transactions = transactions.withColumn('dollar_value', F.round('dollar_value',2))
 
 # Merging all dataset into one dataset
+# @Shromann if need to merge based on only abn and user id 
+# then remove lines 178 and 181
 result = transactions.join(userdetails, on="user_id", how="left")
 result = result.join(consumer, on="consumer_id", how="left")
 result = result.join(spark.createDataFrame(merchants_pd), on="merchant_abn", how="left")
