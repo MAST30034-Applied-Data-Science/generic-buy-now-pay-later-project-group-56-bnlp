@@ -108,12 +108,12 @@ def subcategory(data):
     tokens = nltk.word_tokenize(data)
     lemmen_words = [wordnet_lemmatizer.lemmatize(word, pos="v") for word in tokens if word != ',']
 
-    for category in industry_dict.keys():
+    for subcategory in retail_dict.keys():
 
-        synonyms = get_synonyms(industry_dict[category]) 
+        synonyms = get_synonyms(retail_dict[subcategory]) 
 
         if (len(set(lemmen_words).intersection(set(synonyms))) != 0):
-            return category
+            return subcategory
 
     return 'others_retailing'
 
