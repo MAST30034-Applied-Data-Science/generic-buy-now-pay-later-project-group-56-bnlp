@@ -27,7 +27,9 @@ spark = (
 # Loading all data sets
 #different locations
 merchants = spark.read.parquet("./data/tables/tbl_merchants.parquet")
+merchants_frud_prob = spark.read.csv("./data/tables/merchant_fraud_probability.csv", sep = ',', header=True)
 consumer = spark.read.csv("./data/tables/tbl_consumer.csv", sep = '|', header=True)
+consumer_frud_prob = spark.read.csv("./data/tables/consumer_fraud_probability.csv", sep = ',', header=True)
 userdetails = spark.read.parquet("./data/tables/consumer_user_details.parquet")
 transaction_batch1 = spark.read.parquet("./data/tables/transactions_20210228_20210827_snapshot/")
 transaction_batch2 = spark.read.parquet("./data/tables/transactions_20210828_20220227_snapshot/")
@@ -149,8 +151,18 @@ merchants_pd['subcategory'] = merchants_pd.apply(
                                 lambda row: assign_subcategory(
                                     row['tag'], row['category']), axis = 1)
  
+# Merchant fraud Data
+merchants_frud_prob = merchants_frud_prob.withColumnRenamed('merchant_abn', 'abn')\
+                                        .withColumnRenamed('order_datetime', 'datetime')\
+                                        .withColumnRenamed('fraud_probability', 'merchant_fraud_probability')
+
 # Consumer Data
 consumer = consumer.select("state", "postcode", "gender", "consumer_id")
+
+#Consumer Fraud Data
+consumer_frud_prob = consumer_frud_prob.withColumnRenamed('user_id', 'user')\
+                                        .withColumnRenamed('order_datetime', 'user_datetime')\
+                                        .withColumnRenamed('fraud_probability', 'user_fraud_probability')
 
 # Transaction Data (merging transaction batches together)
 transactions = transaction_batch1.union(transaction_batch2)
@@ -160,6 +172,13 @@ transactions = transactions.withColumn('dollar_value', F.round('dollar_value',2)
 result = transactions.join(userdetails, on="user_id", how="left")
 result = result.join(consumer, on="consumer_id", how="left")
 result = result.join(spark.createDataFrame(merchants_pd), on="merchant_abn", how="left")
+result = result.join(merchants_frud_prob, (result["merchant_abn"] == merchants_frud_prob["abn"]) &
+                    (result["order_datetime"] == merchants_frud_prob["datetime"]), how= 'left')\
+                    .drop('abn', 'datetime')
+result = result.join(consumer_frud_prob, (result["user_id"] == consumer_frud_prob["user"]) &
+                    (result["order_datetime"] == consumer_frud_prob["user_datetime"]), how= 'left')\
+                    .drop('user', 'user_datetime')
+
 
 # Loading data
 result.write.mode('overwrite').parquet('./data/curated/process_data.parquet')
