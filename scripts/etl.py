@@ -27,14 +27,14 @@ spark = (
 # Loading all data sets
 #different locations
 merchants = spark.read.parquet("./data/tables/tbl_merchants.parquet")
-merchants_frud_prob = spark.read.csv("./data/tables/merchant_fraud_probability.csv", sep = ',', header=True)
+merchants_fraud_prob = spark.read.csv("./data/tables/merchant_fraud_probability.csv", sep = ',', header=True)
 consumer = spark.read.csv("./data/tables/tbl_consumer.csv", sep = '|', header=True)
-consumer_frud_prob = spark.read.csv("./data/tables/consumer_fraud_probability.csv", sep = ',', header=True)
+consumer_fraud_prob = spark.read.csv("./data/tables/consumer_fraud_probability.csv", sep = ',', header=True)
 userdetails = spark.read.parquet("./data/tables/consumer_user_details.parquet")
 transaction_batch1 = spark.read.parquet("./data/tables/transactions_20210228_20210827_snapshot/")
 transaction_batch2 = spark.read.parquet("./data/tables/transactions_20210828_20220227_snapshot/")
+transaction_batch3 = spark.read.parquet("./data/tables/transactions_20220228_20220828_snapshot/")
 population = spark.read.option("header", True).csv('./data/tables/population_data.csv')
-# transaction_batch3 = spark.read.parquet("./data/tables/<insert_folder_name>_snapshot/")
 
 """
 Renaming columns, cleaning column
@@ -152,7 +152,7 @@ merchants_pd['subcategory'] = merchants_pd.apply(
                                     row['tag'], row['category']), axis = 1)
  
 # Merchant fraud Data
-merchants_frud_prob = merchants_frud_prob.withColumnRenamed('merchant_abn', 'abn')\
+merchants_fraud_prob = merchants_fraud_prob.withColumnRenamed('merchant_abn', 'abn')\
                                         .withColumnRenamed('order_datetime', 'datetime')\
                                         .withColumnRenamed('fraud_probability', 'merchant_fraud_probability')
 
@@ -160,13 +160,14 @@ merchants_frud_prob = merchants_frud_prob.withColumnRenamed('merchant_abn', 'abn
 consumer = consumer.select("state", "postcode", "gender", "consumer_id")
 
 #Consumer Fraud Data
-consumer_frud_prob = consumer_frud_prob.withColumnRenamed('user_id', 'user')\
+consumer_fraud_prob = consumer_fraud_prob.withColumnRenamed('user_id', 'user')\
                                         .withColumnRenamed('order_datetime', 'user_datetime')\
                                         .withColumnRenamed('fraud_probability', 'user_fraud_probability')
 
 # Transaction Data (merging transaction batches together)
-transactions = transaction_batch1.union(transaction_batch2)
-transactions = transactions.withColumn('dollar_value', F.round('dollar_value',2))
+transaction_join1 = transaction_batch1.union(transaction_batch2)
+transaction_join2 = transaction_join1.union(transaction_batch3)
+transactions = transaction_join2.withColumn('dollar_value', F.round('dollar_value',2))
 
 # Merging all dataset into one dataset
 # @Shromann if need to merge based on only abn and user id 
@@ -174,11 +175,11 @@ transactions = transactions.withColumn('dollar_value', F.round('dollar_value',2)
 result = transactions.join(userdetails, on="user_id", how="left")
 result = result.join(consumer, on="consumer_id", how="left")
 result = result.join(spark.createDataFrame(merchants_pd), on="merchant_abn", how="left")
-result = result.join(merchants_frud_prob, (result["merchant_abn"] == merchants_frud_prob["abn"]) &
-                    (result["order_datetime"] == merchants_frud_prob["datetime"]), how= 'left')\
+result = result.join(merchants_fraud_prob, (result["merchant_abn"] == merchants_fraud_prob["abn"]) &
+                    (result["order_datetime"] == merchants_fraud_prob["datetime"]), how= 'left')\
                     .drop('abn', 'datetime')
-result = result.join(consumer_frud_prob, (result["user_id"] == consumer_frud_prob["user"]) &
-                    (result["order_datetime"] == consumer_frud_prob["user_datetime"]), how= 'left')\
+result = result.join(consumer_fraud_prob, (result["user_id"] == consumer_fraud_prob["user"]) &
+                    (result["order_datetime"] == consumer_fraud_prob["user_datetime"]), how= 'left')\
                     .drop('user', 'user_datetime')
 
 
