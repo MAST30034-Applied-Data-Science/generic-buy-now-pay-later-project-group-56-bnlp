@@ -26,15 +26,15 @@ spark = (
 
 # Loading all data sets
 #different locations
-merchants = spark.read.parquet("./data/tables/tbl_merchants.parquet")
-merchants_fraud_prob = spark.read.csv("./data/tables/merchant_fraud_probability.csv", sep = ',', header=True)
-consumer = spark.read.csv("./data/tables/tbl_consumer.csv", sep = '|', header=True)
-consumer_fraud_prob = spark.read.csv("./data/tables/consumer_fraud_probability.csv", sep = ',', header=True)
-userdetails = spark.read.parquet("./data/tables/consumer_user_details.parquet")
-transaction_batch1 = spark.read.parquet("./data/tables/transactions_20210228_20210827_snapshot/")
-transaction_batch2 = spark.read.parquet("./data/tables/transactions_20210828_20220227_snapshot/")
-transaction_batch3 = spark.read.parquet("./data/tables/transactions_20220228_20220828_snapshot/")
-population = spark.read.option("header", True).csv('./data/tables/population_data.csv')
+merchants = spark.read.parquet("../data/tables/tbl_merchants.parquet")
+merchants_fraud_prob = spark.read.csv("../data/tables/merchant_fraud_probability.csv", sep = ',', header=True)
+consumer = spark.read.csv("../data/tables/tbl_consumer.csv", sep = '|', header=True)
+consumer_fraud_prob = spark.read.csv("../data/tables/consumer_fraud_probability.csv", sep = ',', header=True)
+userdetails = spark.read.parquet("../data/tables/consumer_user_details.parquet")
+transaction_batch1 = spark.read.parquet("../data/tables/transactions_20210228_20210827_snapshot/")
+transaction_batch2 = spark.read.parquet("../data/tables/transactions_20210828_20220227_snapshot/")
+transaction_batch3 = spark.read.parquet("../data/tables/transactions_20220228_20220828_snapshot/")
+population = spark.read.option("header", True).csv('../data/tables/population_data.csv')
 
 """
 Renaming columns, cleaning column
@@ -182,7 +182,37 @@ result = result.join(consumer_fraud_prob, (result["user_id"] == consumer_fraud_p
                     (result["order_datetime"] == consumer_fraud_prob["user_datetime"]), how= 'left')\
                     .drop('user', 'user_datetime')
 
+# Remove NULL/invalid values
+# merchant_abn, consumer_id and user_id should be positive numbers
+result = result.filter(F.col('merchant_abn') > 0)
+result = result.filter(F.col('consumer_id') > 0)
+result = result.filter(F.col('user_id') > 0)
+
+# dollar_value should be positive
+result = result.filter(F.col('dollar_value') > 0)
+
+# Remove NULL values for order_id, order_datetime, state, merchant_name and tag
+result = result.filter(F.col('order_id').isNotNull())
+result = result.filter(F.col('order_datetime').isNotNull())
+result = result.filter(F.col('state').isNotNull())
+result = result.filter(F.col('merchant_name').isNotNull())
+result = result.filter(F.col('tag').isNotNull())
+
+# postcode should be between 200 and 9999 inclusive
+result = result.filter(F.col('postcode').cast("integer") >= 200)
+result = result.filter(F.col('postcode').cast("integer") <= 9999)
+
+# gender should be Male, Female or Undisclosed 
+result = result.filter((F.col("gender") == "Male")|(F.col("gender") == "Female")|(F.col("gender") == "Undisclosed"))
+
+# revenue level should be a, b, c, d or e
+result = result.filter((F.col("revenue") == "a")|(F.col("revenue") == "b")|(F.col("revenue") == "c")|
+    (F.col("revenue") == "d")|(F.col("revenue") == "e"))
+
+# rate should be between 0 and 100
+result = result.withColumn("rate", F.col("rate").cast("double"))
+result = result.filter((F.col("rate") >= 0)&(F.col("rate") <= 100))
 
 # Loading data
-result.write.mode('overwrite').parquet('./data/curated/process_data.parquet')
+result.write.mode('overwrite').parquet('../data/curated/process_data.parquet')
 
