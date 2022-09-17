@@ -4,9 +4,7 @@ and saves it under 'data/curated' directory
 """
 
 #Importing required libraries
-# import imp
 from pyspark.sql import SparkSession, functions as F
-import pandas as pd
 import nltk
 nltk.download('punkt')
 nltk.download('wordnet')
@@ -29,12 +27,6 @@ spark = (
     .getOrCreate()
 )
 
-DATA_PATH = './data/tables/external_datasets/'
-INCOME_SDF_PATH = DATA_PATH + 'income_data_raw.csv'
-POSTCODE_SDF_PATH = DATA_PATH + 'postcode_data.csv'
-POPULATION_PATH = DATA_PATH + 'population_data.csv'
-POSTCODES_SUBSET = ['postcode', 'SA2_MAINCODE_2016']
-
 # Loading all data sets
 merchants = spark.read.parquet("./data/tables/tbl_merchants.parquet")
 merchants_fraud_prob = spark.read.csv("./data/tables/merchant_fraud_probability.csv", sep = ',', header=True)
@@ -46,8 +38,8 @@ transaction_batch2 = spark.read.parquet("./data/tables/transactions_20210828_202
 transaction_batch3 = spark.read.parquet("./data/tables/transactions_20220228_20220828_snapshot/")
 
 # read in processed external datasets
-population = etl_population(POPULATION_PATH, POSTCODE_SDF_PATH, POSTCODES_SUBSET) # ED1: Estimated Region Population by SA2 Districts, 2021
-income = etl_income(POSTCODE_SDF_PATH, INCOME_SDF_PATH) # ED2: Income and age statistics by SA2 region
+population = etl_population() # ED1: Estimated Region Population by SA2 Districts, 2021
+income = etl_income() # ED2: Income and age statistics by SA2 region
 
 """
 Renaming columns, cleaning column
@@ -142,8 +134,8 @@ result = result.filter((F.col("revenue") == "a")|(F.col("revenue") == "b")|(F.co
 result = result.withColumn("rate", F.col("rate").cast("double"))
 result = result.filter((F.col("rate") >= 0)&(F.col("rate") <= 100))
 
+result = result.dropDuplicates(['order_id'])
 
 # Writing data
 print('Writing processed data to file...')
-result.write.mode('overwrite').parquet('../data/curated/process_data.parquet')
-
+result.write.mode('overwrite').parquet('./data/curated/process_data.parquet')
