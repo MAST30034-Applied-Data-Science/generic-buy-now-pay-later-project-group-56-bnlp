@@ -163,7 +163,6 @@ transactions = transaction_join2.withColumn('dollar_value', F.round('dollar_valu
 result = transactions.join(userdetails, on="user_id", how="left")
 result = result.join(consumer, on="consumer_id", how="left")
 result = result.join(spark.createDataFrame(merchants_pd), on="merchant_abn", how="left")
-
 result = result.join(merchants_fraud_prob, (result["merchant_abn"] == merchants_fraud_prob["abn"]) &
                     (result["order_datetime"] == merchants_fraud_prob["datetime"]), how= 'left')\
                     .drop('abn', 'datetime')
