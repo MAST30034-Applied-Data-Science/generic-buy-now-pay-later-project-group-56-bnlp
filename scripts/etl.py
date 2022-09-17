@@ -4,7 +4,7 @@ and saves it under 'data/curated' directory
 """
 
 #Importing required libraries
-import imp
+# import imp
 from pyspark.sql import SparkSession, functions as F
 import pandas as pd
 import nltk
