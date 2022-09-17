@@ -8,20 +8,21 @@ spark = (
     .config("spark.sql.parquet.cacheMetadata", "true")
     .config("spark.driver.memory", "4g")
     .config("spark.sql.session.timeZone", "Etc/UTC")
-    .getOrCreate())
+    .getOrCreate()
+)
 
 
 #DATA_PATH = '../../../data/tables/external_datasets/'
-""" DATA_PATH = './data/tables/external_datasets/'
+DATA_PATH = './data/tables/external_datasets/'
 
 INCOME_SDF_PATH = 'income_by_sa2.parquet'
 POSTCODE_SDF_PATH = 'postcode_data.csv'
 POPULATION_PATH = 'population_data.csv'
 
-POSTCODES_SUBSET = ['postcode', 'SA2_MAINCODE_2016'] """
+POSTCODES_SUBSET = ['postcode', 'SA2_MAINCODE_2016']
 
 
-def load_income_from_csv(income):
+def load_income_from_csv():
 
     # manually create the schema -> to deal with duplicate column names
     schema = StructType() \
@@ -54,45 +55,39 @@ def load_income_from_csv(income):
         .add("mean_earnings_2018-19", StringType(), True)
 
     # read in csv conforming to custom schema
-    """ income_sdf = spark.read.format("csv") \
+    income_sdf = spark.read.format("csv") \
         .option("header", False) \
         .schema(schema) \
-        .load(DATA_PATH + 'income_data_raw.csv') """
-    income_sdf = spark.read.csv(income, schema= schema, header= False)
-
+        .load(DATA_PATH + 'income_data_raw.csv')
     # remove header
     income_sdf = income_sdf.where(income_sdf['SA2'] != "SA2")
 
     return income_sdf
 
-def write_inc_to_pq(income_sdf, path):
-    income_sdf.write.mode('overwrite').parquet(path)
-    print("Wrote to ", path)
+def write_inc_to_pq(income_sdf):
+    income_sdf.write.mode('overwrite').parquet(DATA_PATH + INCOME_SDF_PATH)
+    print("Wrote to ", DATA_PATH + INCOME_SDF_PATH)
     pass
 
-def read_postcodes(path, subset):
-    """ postcodes = spark.read.options(header=True) \
-        .csv(DATA_PATH + POSTCODE_SDF_PATH) """
-
-    postcodes = spark.read.csv(path, header= True)
+def read_postcodes():
+    postcodes = spark.read.options(header=True) \
+        .csv(DATA_PATH + POSTCODE_SDF_PATH)
 
     # select useful subset for linking
-    postcodes = postcodes.select(*subset)
+    postcodes = postcodes.select(*POSTCODES_SUBSET)
     # rename clashing col names
     postcodes = postcodes.withColumnRenamed('SA2_MAINCODE_2016', 'sa2_code')
     return postcodes
 
-def read_population(path):
-    #population = spark.read.option("header", True).csv(DATA_PATH + POPULATION_PATH)
-    population = spark.read.csv(path, header= True)
+def read_population():
+    population = spark.read.option("header", True).csv(DATA_PATH + POPULATION_PATH)
     return population
 
 # This gives the income data aggregated by postcode
-def etl_income(postcode_path, income_path):
-
+def etl_income():
     # get sdfs
-    postcodes = read_population(postcode_path)
-    income_sdf = load_income_from_csv(income_path) # todo: if exists -> read_income() else
+    postcodes = read_postcodes()
+    income_sdf = load_income_from_csv() # todo: if exists -> read_income() else
 
     # join income and postcode dataset by SA2 maincode
     inc_joined = postcodes \
@@ -116,10 +111,10 @@ def etl_income(postcode_path, income_path):
     return agg_by_postcode_income
 
 # etl process for the population dset
-def etl_population(population_path, postcode_path, postcode_subset):
+def etl_population():
     # read in the population/postcode data from file
-    pop_sdf = read_population(population_path)
-    postcodes = read_postcodes(postcode_path, postcode_subset)
+    pop_sdf = read_population()
+    postcodes = read_postcodes()
 
     # use ANUJ's script to preprocess the df
     pop_sdf = population_preprocess(pop_sdf)
@@ -143,7 +138,7 @@ def etl_population(population_path, postcode_path, postcode_subset):
 
 def population_preprocess(data): # ANUJ BUNGLA
 
-    cols_to_keep = ['sa2_code', 'sa2_name_2016', 'erp_2021']
+    cols_to_keep = ['sa2_maincode_2016', 'sa2_name_2016', 'erp_2021']
     population_df = data.select(*cols_to_keep)
 
     population_df = population_df \
