@@ -29,14 +29,14 @@ spark = (
 
 # Loading all data sets
 #different locations
-merchants = spark.read.parquet("./data/tables/tbl_merchants.parquet")
-merchants_fraud_prob = spark.read.csv("./data/tables/merchant_fraud_probability.csv", sep = ',', header=True)
-consumer = spark.read.csv("./data/tables/tbl_consumer.csv", sep = '|', header=True)
-consumer_fraud_prob = spark.read.csv("./data/tables/consumer_fraud_probability.csv", sep = ',', header=True)
-userdetails = spark.read.parquet("./data/tables/consumer_user_details.parquet")
-transaction_batch1 = spark.read.parquet("./data/tables/transactions_20210228_20210827_snapshot/")
-transaction_batch2 = spark.read.parquet("./data/tables/transactions_20210828_20220227_snapshot/")
-transaction_batch3 = spark.read.parquet("./data/tables/transactions_20220228_20220828_snapshot/")
+merchants = spark.read.parquet("../data/tables/tbl_merchants.parquet")
+merchants_fraud_prob = spark.read.csv("../data/tables/merchant_fraud_probability.csv", sep = ',', header=True)
+consumer = spark.read.csv("../data/tables/tbl_consumer.csv", sep = '|', header=True)
+consumer_fraud_prob = spark.read.csv("../data/tables/consumer_fraud_probability.csv", sep = ',', header=True)
+userdetails = spark.read.parquet("../data/tables/consumer_user_details.parquet")
+transaction_batch1 = spark.read.parquet("../data/tables/transactions_20210228_20210827_snapshot/")
+transaction_batch2 = spark.read.parquet("../data/tables/transactions_20210828_20220227_snapshot/")
+transaction_batch3 = spark.read.parquet("../data/tables/transactions_20220228_20220828_snapshot/")
 
 
 """
