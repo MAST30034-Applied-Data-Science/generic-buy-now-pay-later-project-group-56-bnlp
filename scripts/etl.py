@@ -30,7 +30,7 @@ spark = (
 )
 
 DATA_PATH = './data/tables/external_datasets/'
-INCOME_SDF_PATH = DATA_PATH + 'income_by_sa2.parquet'
+INCOME_SDF_PATH = DATA_PATH + 'income_data_raw.csv'
 POSTCODE_SDF_PATH = DATA_PATH + 'postcode_data.csv'
 POPULATION_PATH = DATA_PATH + 'population_data.csv'
 POSTCODES_SUBSET = ['postcode', 'SA2_MAINCODE_2016']
