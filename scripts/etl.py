@@ -75,7 +75,7 @@ merchants_fraud_prob = merchants_fraud_prob.withColumnRenamed('merchant_abn', 'a
 # Consumer Data
 consumer = consumer.select("state", "postcode", "gender", "consumer_id")
 
-#Consumer Fraud Data
+# Consumer Fraud Data
 consumer_fraud_prob = consumer_fraud_prob.withColumnRenamed('user_id', 'user')\
                                         .withColumnRenamed('order_datetime', 'user_datetime')\
                                         .withColumnRenamed('fraud_probability', 'user_fraud_probability')
@@ -131,7 +131,16 @@ result = result.filter((F.col("revenue") == "a")|(F.col("revenue") == "b")|(F.co
 result = result.withColumn("rate", F.col("rate").cast("double"))
 result = result.filter((F.col("rate") >= 0)&(F.col("rate") <= 100))
 
+# drop duplicate orders
 result = result.dropDuplicates(['order_id'])
+
+# the probabilities must be between 0 and 1 and of float value.
+result = result.withColumn('merchant_fraud_probability', 
+    F.round(F.col('merchant_fraud_probability').cast('double')/100, 2))
+result = result.withColumn('user_fraud_probability', 
+    F.round(F.col('user_fraud_probability').cast('double')/100, 2))
+
+
 
 # Writing data
 print('Writing processed data to file...')
