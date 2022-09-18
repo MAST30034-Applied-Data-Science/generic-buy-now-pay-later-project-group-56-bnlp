@@ -86,8 +86,6 @@ transaction_join2 = transaction_join1.union(transaction_batch3)
 transactions = transaction_join2.withColumn('dollar_value', F.round('dollar_value',2))
 
 # Merging all dataset into one dataset
-# @Shromann if need to merge based on only abn and user id
-# then remove lines 178 and 181
 result = transactions.join(userdetails, on="user_id", how="left")
 result = result.join(consumer, on="consumer_id", how="left")
 result = result.join(spark.createDataFrame(merchants_pd), on="merchant_abn", how="left")
@@ -100,7 +98,6 @@ result = result.join(consumer_fraud_prob, (result["user_id"] == consumer_fraud_p
 
 # join external datasets with master
 result = join_ext_with_master(income, population, result)
-
 
 # Pre processing steps on the joined dataset
 
