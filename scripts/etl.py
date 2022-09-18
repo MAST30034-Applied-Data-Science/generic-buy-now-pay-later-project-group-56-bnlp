@@ -5,7 +5,6 @@ and saves it under 'data/curated' directory
 
 #Importing required libraries
 from pyspark.sql import SparkSession, functions as F
-import pandas as pd
 import nltk
 nltk.download('punkt')
 nltk.download('wordnet')
@@ -13,8 +12,9 @@ nltk.download('omw-1.4')
 from nltk.corpus import wordnet
 from nltk.stem.wordnet import WordNetLemmatizer
 
-# import external dataset etl functions
+# import functions from other scripts
 from etl_ext_datasets_funcs import etl_income, etl_population, join_ext_with_master
+from helper_functions import *
 
 
 # Create a spark session
@@ -28,27 +28,23 @@ spark = (
 )
 
 # Loading all data sets
-#different locations
-merchants = spark.read.parquet("../data/tables/tbl_merchants.parquet")
-merchants_fraud_prob = spark.read.csv("../data/tables/merchant_fraud_probability.csv", sep = ',', header=True)
-consumer = spark.read.csv("../data/tables/tbl_consumer.csv", sep = '|', header=True)
-consumer_fraud_prob = spark.read.csv("../data/tables/consumer_fraud_probability.csv", sep = ',', header=True)
-userdetails = spark.read.parquet("../data/tables/consumer_user_details.parquet")
-transaction_batch1 = spark.read.parquet("../data/tables/transactions_20210228_20210827_snapshot/")
-transaction_batch2 = spark.read.parquet("../data/tables/transactions_20210828_20220227_snapshot/")
-transaction_batch3 = spark.read.parquet("../data/tables/transactions_20220228_20220828_snapshot/")
-
-
-"""
-Renaming columns, cleaning column
-and add columns accordingly
-"""
-
+merchants = spark.read.parquet("./data/tables/tbl_merchants.parquet")
+merchants_fraud_prob = spark.read.csv("./data/tables/merchant_fraud_probability.csv", sep = ',', header=True)
+consumer = spark.read.csv("./data/tables/tbl_consumer.csv", sep = '|', header=True)
+consumer_fraud_prob = spark.read.csv("./data/tables/consumer_fraud_probability.csv", sep = ',', header=True)
+userdetails = spark.read.parquet("./data/tables/consumer_user_details.parquet")
+transaction_batch1 = spark.read.parquet("./data/tables/transactions_20210228_20210827_snapshot/")
+transaction_batch2 = spark.read.parquet("./data/tables/transactions_20210828_20220227_snapshot/")
+transaction_batch3 = spark.read.parquet("./data/tables/transactions_20220228_20220828_snapshot/")
 
 # read in processed external datasets
 population = etl_population() # ED1: Estimated Region Population by SA2 Districts, 2021
 income = etl_income() # ED2: Income and age statistics by SA2 region
 
+"""
+Renaming columns, cleaning column
+and add columns accordingly
+"""
 
 # Merchant data
 merchants = merchants.withColumnRenamed("name", "merchant_name")\
@@ -63,81 +59,13 @@ merchants = merchants.withColumn("tag", F.lower(F.col("tag")))
 merchants = merchants.withColumn("tag", F.regexp_replace(F.col("tag"), " +", " "))
 
 merchants = merchants.select("merchant_name", "merchant_abn", "tag", "revenue", "rate")
-
-#function to assign category and subcategories
-wordnet_lemmatizer = WordNetLemmatizer()
-industry_dict = {'agriculture': ['farmer', 'nurseries', 'flower', 'garden', 'lawn'], \
-                'arts_and_recreation': ['art', 'musician', 'artist', 'performer', 'gambling', 'casino', 'craft'],\
-                'info_media_and_telecommunications': 
-                ['magazine', 'book', 'newspaper', 'information', 'technology', 'digital', 'telecommunication', 'online', 'computer', 'radio', 'tv'],\
-                'rental_hiring_and_real_estate': ['rent', 'machine', 'machinery'],\
-                'retail_and_wholesale_trade': 
-                ['supply', 'supplier', 'shop', 'food', 'clothing', 'equipment', 'footwear', 'textiles', 'accessories', 'furniture', 
-                'fuel', 'cosmetic', 'pharmaceuticals']}
-industry_lst = ['rental_hiring_and_real_estate', 'retail_and_wholesale_trade', 'agriculture', 'arts_and_recreation', 
-                'info_media_and_telecommunications']
-
-retail_dict = {'food_retailing': ['food', 'grocery', 'liquor', 'poultry', 'lawn'],
-                'household_goods_retailing': ['furniture', 'textile', 'houseware', 'electrical', 'electronic', 'computer', 'digital'],
-                'clothing_footwear__personal_accessory_retailing':
-                ['clothing', 'footwear', 'accessories', 'furniture', 'cosmetic', 'watch', 'jewellery'],
-                'department_stores': ['store', 'department']}
-
-def get_synonyms(words):
-
-    synonyms = []
-
-    for word in words:
-        for synset in wordnet.synsets(word):
-            for lemma in synset.lemmas():
-                synonyms.append(lemma.name())
-
-    return synonyms
-
-def subcategory(data):
-    tokens = nltk.word_tokenize(data)
-    lemmen_words = [wordnet_lemmatizer.lemmatize(word, pos="v") for word in tokens if word != ',']
-
-    for subcategory in retail_dict.keys():
-
-        synonyms = get_synonyms(retail_dict[subcategory])
-
-        if (len(set(lemmen_words).intersection(set(synonyms))) != 0):
-            return subcategory
-
-    return 'others_retailing'
-
-def assign_category(data):
-
-    tokens = nltk.word_tokenize(data)
-    lemmen_words = [wordnet_lemmatizer.lemmatize(word, pos="v") for word in tokens if word != ',']
-
-    for category in industry_lst:
-
-        synonyms = get_synonyms(industry_dict[category]) 
-
-        if (category == 'retail_and_wholesale_trade'):
-
-            if ((len(set(lemmen_words).intersection(set(synonyms))) != 0 ) or ('goods' in set(lemmen_words))):
-                return category
-        
-        else:
-
-            if (len(set(lemmen_words).intersection(set(synonyms))) != 0):
-                return category
-
-    return 'others'
-
-def assign_subcategory(data, category):
-    if (category == 'retail_and_wholesale_trade'):
-        return subcategory(data)
-
-
 merchants_pd = merchants.toPandas()
 merchants_pd['category'] = merchants_pd['tag'].apply(assign_category)
 merchants_pd['subcategory'] = merchants_pd.apply(
                                 lambda row: assign_subcategory(
                                     row['tag'], row['category']), axis = 1)
+
+
 
 # Merchant fraud Data
 merchants_fraud_prob = merchants_fraud_prob.withColumnRenamed('merchant_abn', 'abn')\
@@ -170,8 +98,12 @@ result = result.join(consumer_fraud_prob, (result["user_id"] == consumer_fraud_p
                     (result["order_datetime"] == consumer_fraud_prob["user_datetime"]), how= 'left')\
                     .drop('user', 'user_datetime')
 
-# Derio's outlier removal code
-# Remove NULL/invalid values
+# join external datasets with master
+result = join_ext_with_master(income, population, result)
+
+
+# Pre processing steps on the joined dataset
+
 # merchant_abn, consumer_id and user_id should be positive numbers
 result = result.filter(F.col('merchant_abn') > 0)
 result = result.filter(F.col('consumer_id') > 0)
@@ -202,12 +134,8 @@ result = result.filter((F.col("revenue") == "a")|(F.col("revenue") == "b")|(F.co
 result = result.withColumn("rate", F.col("rate").cast("double"))
 result = result.filter((F.col("rate") >= 0)&(F.col("rate") <= 100))
 
-# join external datasets with master
-result = join_ext_with_master(income_sdf=income,
-                               pop_sdf=population,
-                               transactions=result)
+result = result.dropDuplicates(['order_id'])
 
 # Writing data
 print('Writing processed data to file...')
-result.write.mode('overwrite').parquet('../data/curated/process_data.parquet')
-
+result.write.mode('overwrite').parquet('./data/curated/process_data.parquet')

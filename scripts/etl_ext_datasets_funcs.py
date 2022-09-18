@@ -13,7 +13,7 @@ spark = (
 
 
 #DATA_PATH = '../../../data/tables/external_datasets/'
-DATA_PATH = '../data/tables/external_datasets/'
+DATA_PATH = './data/tables/external_datasets/'
 
 INCOME_SDF_PATH = 'income_by_sa2.parquet'
 POSTCODE_SDF_PATH = 'postcode_data.csv'
