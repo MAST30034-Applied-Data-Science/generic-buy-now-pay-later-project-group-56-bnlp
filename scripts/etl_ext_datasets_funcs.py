@@ -16,7 +16,7 @@ spark = (
 DATA_PATH = './data/tables/external_datasets/'
 
 INCOME_SDF_PATH = 'income_by_sa2.parquet'
-POSTCODE_SDF_PATH = 'postcode_data.csv'
+POSTCODE_SDF_PATH = 'postcode_SA2_data.csv'
 POPULATION_PATH = 'population_data.csv'
 
 POSTCODES_SUBSET = ['postcode', 'SA2_MAINCODE_2016']

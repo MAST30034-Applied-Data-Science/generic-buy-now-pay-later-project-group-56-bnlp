@@ -12,6 +12,16 @@ nltk.download('omw-1.4')
 from nltk.corpus import wordnet
 from nltk.stem.wordnet import WordNetLemmatizer
 
+import geopandas
+import folium
+import io
+import os
+import requests
+import zipfile
+import pandas as pd
+from urllib.request import urlretrieve
+from owslib.wfs import WebFeatureService
+
 # import functions from other scripts
 from etl_ext_datasets_funcs import etl_income, etl_population, join_ext_with_master
 from helper_functions import *
@@ -37,6 +47,89 @@ transaction_batch1 = spark.read.parquet("./data/tables/transactions_20210228_202
 transaction_batch2 = spark.read.parquet("./data/tables/transactions_20210828_20220227_snapshot/")
 transaction_batch3 = spark.read.parquet("./data/tables/transactions_20220228_20220828_snapshot/")
 
+
+"""..................................................................................EXTRACT ALL EXTERNAL DATASETS.................................................................................."""
+
+# Location of root directory.
+root_dir = './data/tables/'
+
+# Create "external_datasets" folder under the root directory where all the external data will be stored.
+external_data_dir = 'external_datasets'
+
+# Prevent error if directory already exists.
+if not os.path.exists(root_dir + external_data_dir):
+    os.makedirs(root_dir + external_data_dir)
+
+path = root_dir + external_data_dir + '/'
+
+
+# 1a) Postcode and SA2 data:
+url = "https://www.matthewproctor.com/Content/postcodes/australian_postcodes.csv"
+r = requests.get(url)
+target_dir = path + 'postcode_SA2_data.csv'
+
+with open(target_dir, 'wb') as outfile:
+    outfile.write(r.content)
+    outfile.close()
+
+
+# 1b) Total income 2014-2019 excel file:
+url = 'https://www.abs.gov.au/statistics/labour/earnings-and-working-conditions/personal-income-australia/2014-15-2018-19/6524055002_DO001.xlsx'
+r = requests.get(url)
+target_dir = path + 'income_data.xlsx'
+
+with open(target_dir, 'wb') as outfile:
+    outfile.write(r.content)
+    outfile.close()
+
+# GO THROUGH WITH NOAH ***********************************************************************
+# Convert needed sheet from excel file to csv format, and then delete the excel file.
+
+# read_file = pd.read_excel(target_dir, sheet_name='Table 1.4')
+# os.remove(target_dir)
+
+# target_dir = path + 'income_data_raw.csv'
+# read_file.to_csv(target_dir, index = None)
+
+
+# 1c) Australian state shapefiles:
+url = "https://www.abs.gov.au/statistics/standards/australian-statistical-geography-standard-asgs-edition-3/jul2021-jun2026/access-and-downloads/digital-boundary-files/STE_2021_AUST_SHP_GDA2020.zip"
+target_dir = path + 'state_data.zip'
+urlretrieve(url, target_dir)
+
+# unzip state_data.zip
+with zipfile.ZipFile(target_dir,"r") as zip_ref:
+    zip_ref.extractall(path + "state_data")
+
+
+# 1d) Australian post-code shapefiles:
+url = "https://www.abs.gov.au/statistics/standards/australian-statistical-geography-standard-asgs-edition-3/jul2021-jun2026/access-and-downloads/digital-boundary-files/POA_2021_AUST_GDA94_SHP.zip"
+target_dir = path + 'postcode_data.zip'
+urlretrieve(url, target_dir)
+
+# unzip state_data.zip
+with zipfile.ZipFile(target_dir,"r") as zip_ref:
+    zip_ref.extractall(path + "postcode_data")
+
+
+# 2) API call:
+# Set up API connection.
+WFS_USERNAME = 'xrjps'
+WFS_PASSWORD= 'Jmf16l4TcswU3Or7'
+WFS_URL='https://adp.aurin.org.au/geoserver/wfs'
+
+adp_client = WebFeatureService(url=WFS_URL,username=WFS_USERNAME, password=WFS_PASSWORD, version='2.0.0')
+
+# Extract population 2001-2021 data and store into external dataset folder directory.
+response = adp_client.getfeature(typename='datasource-AU_Govt_ABS-UoM_AURIN_DB_3:abs_regional_population_sa2_2001_2021', outputFormat='csv')
+target_dir = path + 'population_data.csv'
+
+out = open(target_dir, 'wb')
+out.write(response.read())
+out.close
+
+
+"""......................................................................................................................................................................................................."""
 # read in processed external datasets
 population = etl_population() # ED1: Estimated Region Population by SA2 Districts, 2021
 income = etl_income() # ED2: Income and age statistics by SA2 region
