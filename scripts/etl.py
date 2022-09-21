@@ -245,8 +245,8 @@ result = result.withColumn('user_fraud_probability',
     F.avg(F.col('user_fraud_probability')).over(user_window))\
         .otherwise(F.col('user_fraud_probability')))
 
-# replace rest missing probabilities with '0.5' as default value.
-result = result.fillna(0.5, ['merchant_fraud_probability', 'user_fraud_probability'])
+# Uncomment the line below to replace rest missing probabilities with '0.5' as default value.
+# result = result.fillna(0.5, ['merchant_fraud_probability', 'user_fraud_probability'])
 
 # Writing data
 print('Writing processed data to file...')
