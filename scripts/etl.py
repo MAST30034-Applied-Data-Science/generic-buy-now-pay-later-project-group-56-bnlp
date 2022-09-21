@@ -4,7 +4,7 @@ and saves it under 'data/curated' directory
 """
 
 #Importing required libraries
-from pyspark.sql import SparkSession, functions as F
+from pyspark.sql import SparkSession, Window, functions as F
 import nltk
 nltk.download('punkt')
 nltk.download('wordnet')
@@ -158,8 +158,6 @@ merchants_pd['subcategory'] = merchants_pd.apply(
                                 lambda row: assign_subcategory(
                                     row['tag'], row['category']), axis = 1)
 
-
-
 # Merchant fraud Data
 merchants_fraud_prob = merchants_fraud_prob.withColumnRenamed('merchant_abn', 'abn')\
                                         .withColumnRenamed('order_datetime', 'datetime')\
@@ -233,7 +231,22 @@ result = result.withColumn('merchant_fraud_probability',
 result = result.withColumn('user_fraud_probability', 
     F.round(F.col('user_fraud_probability').cast('double')/100, 2))
 
+# impute `merchant_fraud_probability` Null Values 
+merchant_window = Window.partitionBy(["merchant_abn"])
+result = result.withColumn('merchant_fraud_probability',
+    F.when(F.col('merchant_fraud_probability').isNull(), 
+    F.avg(F.col('merchant_fraud_probability')).over(merchant_window))\
+        .otherwise(F.col('merchant_fraud_probability')))
 
+# impute `user_fraud_probability` Null Values 
+user_window = Window.partitionBy(["user_id"])
+result = result.withColumn('user_fraud_probability',
+    F.when(F.col('user_fraud_probability').isNull(), 
+    F.avg(F.col('user_fraud_probability')).over(user_window))\
+        .otherwise(F.col('user_fraud_probability')))
+
+# replace rest missing probabilities with '0.5' as default value.
+result = result.fillna(0.5, ['merchant_fraud_probability', 'user_fraud_probability'])
 
 # Writing data
 print('Writing processed data to file...')
