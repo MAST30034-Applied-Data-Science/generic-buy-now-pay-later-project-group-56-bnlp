@@ -159,6 +159,11 @@ def join_ext_with_master(income_sdf, pop_sdf, transactions):
     pop_sdf = pop_sdf.withColumnRenamed('postcode', 'postcode_pset')
     income_sdf = income_sdf.withColumnRenamed('postcode', 'postcode_iset')
 
+    pop_sdf = pop_sdf.withColumn('postcode_pset', pop_sdf['postcode_pset'].cast('int'))
+    income_sdf = income_sdf.withColumn('postcode_iset', income_sdf['postcode_iset'].cast('int'))
+
+    transactions = transactions.withColumn('postcode', transactions['postcode'].cast('int'))
+
     transactions_ = transactions \
         .join(pop_sdf, transactions['postcode'] == pop_sdf['postcode_pset'], how='left') \
         .drop('postcode_pset') \
