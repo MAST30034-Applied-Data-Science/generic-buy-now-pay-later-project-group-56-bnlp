@@ -226,9 +226,11 @@ result = result.filter((F.col("gender") == "Male")|(F.col("gender") == "Female")
 result = result.filter((F.col("revenue") == "a")|(F.col("revenue") == "b")|(F.col("revenue") == "c")|
                        (F.col("revenue") == "d")|(F.col("revenue") == "e"))
 
-# rate should be between 0 and 100
+# rate should be between 0 and 1
 result = result.withColumn("rate", F.col("rate").cast("double"))
-result = result.filter((F.col("rate") >= 0)&(F.col("rate") <= 100))
+result = result.withColumn("rate", F.round(F.col("rate")/100, 4))
+result = result.filter((F.col("rate") >= 0)&(F.col("rate") <= 1))
+
 
 # drop duplicate orders
 result = result.dropDuplicates(['order_id'])
