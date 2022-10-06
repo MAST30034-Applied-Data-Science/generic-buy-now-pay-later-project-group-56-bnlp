@@ -27,6 +27,8 @@ from etl_ext_datasets_funcs import etl_income
 from etl_ext_datasets_funcs import etl_population
 from etl_ext_datasets_funcs import join_ext_with_master
 from helper_functions import *
+from fraud_model_funcs import get_fraud_df
+
 
 # argparse
 import argparse
@@ -61,7 +63,7 @@ transaction_batch1 = spark.read.parquet(input_path +
     "/transactions_20210228_20210827_snapshot/")
 transaction_batch2 = spark.read.parquet(input_path + 
     "/transactions_20210828_20220227_snapshot/")
-transaction_batch3 = spark.read.parquet(input_path + 
+transaction_batch3 = spark.read.parquet(input_path +
     "/transactions_20220228_20220828_snapshot/")
 
 
@@ -278,6 +280,9 @@ result = result.withColumn('merchant_fraud_probability',
     F.round(F.col('merchant_fraud_probability').cast('double')/100, 2))
 result = result.withColumn('user_fraud_probability', 
     F.round(F.col('user_fraud_probability').cast('double')/100, 2))
+
+# model fraudulent transactions and remove them from df
+result = get_fraud_df(result).drop('isfraud')
 
 # Writing data
 print('Writing processed data to file...')
