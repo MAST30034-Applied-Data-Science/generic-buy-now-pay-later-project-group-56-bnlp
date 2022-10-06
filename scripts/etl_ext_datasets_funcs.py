@@ -12,8 +12,8 @@ spark = (
 )
 
 
-#DATA_PATH = '../../../data/tables/external_datasets/'
-DATA_PATH = './data/tables/external_datasets/'
+#path = '../../../data/tables/external_datasets/'
+#path = './data/tables/external_datasets/'
 
 INCOME_SDF_PATH = 'income_by_sa2.parquet'
 POSTCODE_SDF_PATH = 'postcode_SA2_data.csv'
@@ -22,7 +22,7 @@ POPULATION_PATH = 'population_data.csv'
 POSTCODES_SUBSET = ['postcode', 'SA2_MAINCODE_2016']
 
 
-def load_income_from_csv():
+def load_income_from_csv(path):
 
     # manually create the schema -> to deal with duplicate column names
     schema = StructType() \
@@ -58,20 +58,20 @@ def load_income_from_csv():
     income_sdf = spark.read.format("csv") \
         .option("header", False) \
         .schema(schema) \
-        .load(DATA_PATH + 'income_data_raw.csv')
+        .load(path + 'income_data_raw.csv')
     # remove header
     income_sdf = income_sdf.where(income_sdf['SA2'] != "SA2")
 
     return income_sdf
 
-def write_inc_to_pq(income_sdf):
-    income_sdf.write.mode('overwrite').parquet(DATA_PATH + INCOME_SDF_PATH)
-    print("Wrote to ", DATA_PATH + INCOME_SDF_PATH)
+def write_inc_to_pq(income_sdf, path):
+    income_sdf.write.mode('overwrite').parquet(path + INCOME_SDF_PATH)
+    print("Wrote to ", path + INCOME_SDF_PATH)
     pass
 
-def read_postcodes():
+def read_postcodes(path):
     postcodes = spark.read.options(header=True) \
-        .csv(DATA_PATH + POSTCODE_SDF_PATH)
+        .csv(path + POSTCODE_SDF_PATH)
 
     # select useful subset for linking
     postcodes = postcodes.select(*POSTCODES_SUBSET)
@@ -79,15 +79,15 @@ def read_postcodes():
     postcodes = postcodes.withColumnRenamed('SA2_MAINCODE_2016', 'sa2_code')
     return postcodes
 
-def read_population():
-    population = spark.read.option("header", True).csv(DATA_PATH + POPULATION_PATH)
+def read_population(path):
+    population = spark.read.option("header", True).csv(path + POPULATION_PATH)
     return population
 
 # This gives the income data aggregated by postcode
-def etl_income():
+def etl_income(path):
     # get sdfs
-    postcodes = read_postcodes()
-    income_sdf = load_income_from_csv() # todo: if exists -> read_income() else
+    postcodes = read_postcodes(path)
+    income_sdf = load_income_from_csv(path) # todo: if exists -> read_income() else
 
     # join income and postcode dataset by SA2 maincode
     inc_joined = postcodes \
@@ -111,10 +111,10 @@ def etl_income():
     return agg_by_postcode_income
 
 # etl process for the population dset
-def etl_population():
+def etl_population(path):
     # read in the population/postcode data from file
-    pop_sdf = read_population()
-    postcodes = read_postcodes()
+    pop_sdf = read_population(path)
+    postcodes = read_postcodes(path)
 
     # use ANUJ's script to preprocess the df
     pop_sdf = population_preprocess(pop_sdf)
