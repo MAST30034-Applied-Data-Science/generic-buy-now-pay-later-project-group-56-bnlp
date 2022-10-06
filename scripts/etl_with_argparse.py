@@ -23,7 +23,9 @@ from urllib.request import urlretrieve
 from owslib.wfs import WebFeatureService
 
 # import functions from other scripts
-from etl_ext_datasets_funcs import etl_income, etl_population, join_ext_with_master
+from etl_ext_datasets_funcs import etl_income
+from etl_ext_datasets_funcs import etl_population
+from etl_ext_datasets_funcs import join_ext_with_master
 from helper_functions import *
 
 # argparse
@@ -47,21 +49,29 @@ spark = (
 
 # Loading all data sets
 merchants = spark.read.parquet(input_path + "/tbl_merchants.parquet")
-merchants_fraud_prob = spark.read.csv(input_path + "/merchant_fraud_probability.csv", sep = ',', header=True)
-consumer = spark.read.csv(input_path + "/tbl_consumer.csv", sep = '|', header=True)
-consumer_fraud_prob = spark.read.csv(input_path + "/consumer_fraud_probability.csv", sep = ',', header=True)
-userdetails = spark.read.parquet(input_path + "/consumer_user_details.parquet")
-transaction_batch1 = spark.read.parquet(input_path + "/transactions_20210228_20210827_snapshot/")
-transaction_batch2 = spark.read.parquet(input_path + "/transactions_20210828_20220227_snapshot/")
-transaction_batch3 = spark.read.parquet(input_path + "/transactions_20220228_20220828_snapshot/")
+merchants_fraud_prob = spark.read.csv(input_path + 
+    "/merchant_fraud_probability.csv", sep = ',', header=True)
+consumer = spark.read.csv(input_path + "/tbl_consumer.csv", 
+    sep = '|', header=True)
+consumer_fraud_prob = spark.read.csv(input_path + 
+    "/consumer_fraud_probability.csv", sep = ',', header=True)
+userdetails = spark.read.parquet(input_path + 
+    "/consumer_user_details.parquet")
+transaction_batch1 = spark.read.parquet(input_path + 
+    "/transactions_20210228_20210827_snapshot/")
+transaction_batch2 = spark.read.parquet(input_path + 
+    "/transactions_20210828_20220227_snapshot/")
+transaction_batch3 = spark.read.parquet(input_path + 
+    "/transactions_20220228_20220828_snapshot/")
 
 
-"""..................................................................................EXTRACT ALL EXTERNAL DATASETS.................................................................................."""
+# EXTRACT ALL EXTERNAL DATASETS
 
 # Location of root directory.
 root_dir = input_path + '/'
 
-# Create "external_datasets" folder under the root directory where all the external data will be stored.
+# Create "external_datasets" folder under the root directory where all the 
+# external data will be stored.
 external_data_dir = 'external_datasets'
 
 # Prevent error if directory already exists.
@@ -72,7 +82,8 @@ path = root_dir + external_data_dir + '/'
 
 
 # 1a) Postcode and SA2 data:
-url = "https://www.matthewproctor.com/Content/postcodes/australian_postcodes.csv"
+url = "https://www.matthewproctor.com/Content/postcodes/" + \
+    "australian_postcodes.csv"
 r = requests.get(url)
 target_dir = path + 'postcode_SA2_data.csv'
 
@@ -82,7 +93,9 @@ with open(target_dir, 'wb') as outfile:
 
 
 # 1b) Total income 2014-2019 excel file:
-url = 'https://www.abs.gov.au/statistics/labour/earnings-and-working-conditions/personal-income-australia/2014-15-2018-19/6524055002_DO001.xlsx'
+url = "https://www.abs.gov.au/statistics/labour/" + \
+    "earnings-and-working-conditions/personal-income-australia/" + \
+    "2014-15-2018-19/6524055002_DO001.xlsx"
 r = requests.get(url)
 target_dir = path + 'income_data.xlsx'
 
@@ -90,18 +103,12 @@ with open(target_dir, 'wb') as outfile:
     outfile.write(r.content)
     outfile.close()
 
-# GO THROUGH WITH NOAH ***********************************************************************
-# Convert needed sheet from excel file to csv format, and then delete the excel file.
-
-# read_file = pd.read_excel(target_dir, sheet_name='Table 1.4')
-# os.remove(target_dir)
-
-# target_dir = path + 'income_data_raw.csv'
-# read_file.to_csv(target_dir, index = None)
-
 
 # 1c) Australian state shapefiles:
-url = "https://www.abs.gov.au/statistics/standards/australian-statistical-geography-standard-asgs-edition-3/jul2021-jun2026/access-and-downloads/digital-boundary-files/STE_2021_AUST_SHP_GDA2020.zip"
+url = "https://www.abs.gov.au/statistics/standards/" + \
+    "australian-statistical-geography-standard-asgs-edition-3/" + \
+    "jul2021-jun2026/access-and-downloads/digital-boundary-files/" + \
+    "STE_2021_AUST_SHP_GDA2020.zip"
 target_dir = path + 'state_data.zip'
 urlretrieve(url, target_dir)
 
@@ -111,7 +118,10 @@ with zipfile.ZipFile(target_dir,"r") as zip_ref:
 
 
 # 1d) Australian post-code shapefiles:
-url = "https://www.abs.gov.au/statistics/standards/australian-statistical-geography-standard-asgs-edition-3/jul2021-jun2026/access-and-downloads/digital-boundary-files/POA_2021_AUST_GDA94_SHP.zip"
+url = "https://www.abs.gov.au/statistics/standards/" + \
+    "australian-statistical-geography-standard-asgs-edition-3/" + \
+    "jul2021-jun2026/access-and-downloads/digital-boundary-files/" + \
+    "POA_2021_AUST_GDA94_SHP.zip"
 target_dir = path + 'postcode_data.zip'
 urlretrieve(url, target_dir)
 
@@ -126,10 +136,14 @@ WFS_USERNAME = 'xrjps'
 WFS_PASSWORD= 'Jmf16l4TcswU3Or7'
 WFS_URL='https://adp.aurin.org.au/geoserver/wfs'
 
-adp_client = WebFeatureService(url=WFS_URL,username=WFS_USERNAME, password=WFS_PASSWORD, version='2.0.0')
+adp_client = WebFeatureService(url=WFS_URL,username=WFS_USERNAME, 
+    password=WFS_PASSWORD, version='2.0.0')
 
-# Extract population 2001-2021 data and store into external dataset folder directory.
-response = adp_client.getfeature(typename='datasource-AU_Govt_ABS-UoM_AURIN_DB_3:abs_regional_population_sa2_2001_2021', outputFormat='csv')
+# Extract population 2001-2021 data and store into external dataset 
+# folder directory.
+response = adp_client.getfeature(typename="datasource-AU_Govt_ABS-" + \
+    "UoM_AURIN_DB_3:abs_regional_population_sa2_2001_2021", 
+    outputFormat='csv')
 target_dir = path + 'population_data.csv'
 
 out = open(target_dir, 'wb')
@@ -137,10 +151,11 @@ out.write(response.read())
 out.close
 
 
-"""......................................................................................................................................................................................................."""
 # read in processed external datasets
-population = etl_population() # ED1: Estimated Region Population by SA2 Districts, 2021
-income = etl_income() # ED2: Income and age statistics by SA2 region
+# ED1: Estimated Region Population by SA2 Districts, 2021
+population = etl_population(path) 
+# ED2: Income and age statistics by SA2 region
+income = etl_income(path) 
 
 """
 Renaming columns, cleaning column
@@ -149,17 +164,23 @@ and add columns accordingly
 
 # Merchant data
 merchants = merchants.withColumnRenamed("name", "merchant_name")\
-                    .withColumn("tags", F.expr("substring(tags, 3, length(tags) - 4)"))
+                    .withColumn("tags", 
+                        F.expr("substring(tags, 3, length(tags) - 4)"))
 
-merchants = merchants.withColumn('tag', F.split(F.regexp_replace('tags', '\), \(|], \[', ";"), ";").getItem(0))\
-                .withColumn('revenue', F.split(F.regexp_replace('tags', '\), \(|], \[', ";"), ";").getItem(1))\
-                .withColumn('rate', F.split(F.regexp_replace('tags', '\), \(|], \[', ";"), ";").getItem(2))\
+merchants = merchants.withColumn('tag', F.split(F.regexp_replace('tags', 
+                    '\), \(|], \[', ";"), ";").getItem(0))\
+                .withColumn('revenue', F.split(F.regexp_replace('tags', 
+                    '\), \(|], \[', ";"), ";").getItem(1))\
+                .withColumn('rate', F.split(F.regexp_replace('tags', 
+                    '\), \(|], \[', ";"), ";").getItem(2))\
                 .withColumn('rate', F.split('rate', ': ').getItem(1))
 
 merchants = merchants.withColumn("tag", F.lower(F.col("tag")))
-merchants = merchants.withColumn("tag", F.regexp_replace(F.col("tag"), " +", " "))
+merchants = merchants.withColumn("tag", F.regexp_replace(F.col("tag"), 
+    " +", " "))
 
-merchants = merchants.select("merchant_name", "merchant_abn", "tag", "revenue", "rate")
+merchants = merchants.select("merchant_name", "merchant_abn", "tag", 
+    "revenue", "rate")
 merchants_pd = merchants.toPandas()
 merchants_pd['category'] = merchants_pd['tag'].apply(assign_category)
 merchants_pd['subcategory'] = merchants_pd.apply(
@@ -167,32 +188,46 @@ merchants_pd['subcategory'] = merchants_pd.apply(
                                     row['tag'], row['category']), axis = 1)
 
 # Merchant fraud Data
-merchants_fraud_prob = merchants_fraud_prob.withColumnRenamed('merchant_abn', 'abn')\
-                                        .withColumnRenamed('order_datetime', 'datetime')\
-                                        .withColumnRenamed('fraud_probability', 'merchant_fraud_probability')
+merchants_fraud_prob = merchants_fraud_prob.withColumnRenamed('merchant_abn', 
+                                            'abn')\
+                                        .withColumnRenamed('order_datetime', 
+                                            'datetime')\
+                                        .withColumnRenamed(
+                                            'fraud_probability', 
+                                            'merchant_fraud_probability')
 
 # Consumer Data
 consumer = consumer.select("state", "postcode", "gender", "consumer_id")
 
 # Consumer Fraud Data
-consumer_fraud_prob = consumer_fraud_prob.withColumnRenamed('user_id', 'user')\
-                                        .withColumnRenamed('order_datetime', 'user_datetime')\
-                                        .withColumnRenamed('fraud_probability', 'user_fraud_probability')
+consumer_fraud_prob = consumer_fraud_prob.withColumnRenamed('user_id', 
+                                            'user')\
+                                        .withColumnRenamed('order_datetime', 
+                                            'user_datetime')\
+                                        .withColumnRenamed(
+                                            'fraud_probability', 
+                                            'user_fraud_probability')
 
 # Transaction Data (merging transaction batches together)
 transaction_join1 = transaction_batch1.union(transaction_batch2)
 transaction_join2 = transaction_join1.union(transaction_batch3)
-transactions = transaction_join2.withColumn('dollar_value', F.round('dollar_value',2))
+transactions = transaction_join2.withColumn('dollar_value', 
+    F.round('dollar_value',2))
 
 # Merging all dataset into one dataset
 result = transactions.join(userdetails, on="user_id", how="left")
 result = result.join(consumer, on="consumer_id", how="left")
-result = result.join(spark.createDataFrame(merchants_pd), on="merchant_abn", how="left")
-result = result.join(merchants_fraud_prob, (result["merchant_abn"] == merchants_fraud_prob["abn"]) &
-                    (result["order_datetime"] == merchants_fraud_prob["datetime"]), how= 'left')\
+result = result.join(spark.createDataFrame(merchants_pd), 
+    on="merchant_abn", how="left")
+result = result.join(merchants_fraud_prob, 
+                    (result["merchant_abn"] == merchants_fraud_prob["abn"]) &
+                    (result["order_datetime"] == 
+                        merchants_fraud_prob["datetime"]), how= 'left')\
                     .drop('abn', 'datetime')
-result = result.join(consumer_fraud_prob, (result["user_id"] == consumer_fraud_prob["user"]) &
-                    (result["order_datetime"] == consumer_fraud_prob["user_datetime"]), how= 'left')\
+result = result.join(consumer_fraud_prob, (result["user_id"] == 
+                        consumer_fraud_prob["user"]) &
+                    (result["order_datetime"] == 
+                        consumer_fraud_prob["user_datetime"]), how= 'left')\
                     .drop('user', 'user_datetime')
 
 # join external datasets with master
@@ -208,7 +243,8 @@ result = result.filter(F.col('user_id') > 0)
 # dollar_value should be positive
 result = result.filter(F.col('dollar_value') > 0)
 
-# Remove NULL values for order_id, order_datetime, state, merchant_name and tag
+# Remove NULL values for order_id, order_datetime, state, merchant_name
+# and tag
 result = result.filter(F.col('order_id').isNotNull())
 result = result.filter(F.col('order_datetime').isNotNull())
 result = result.filter(F.col('state').isNotNull())
@@ -220,11 +256,13 @@ result = result.filter(F.col('postcode').cast("integer") >= 200)
 result = result.filter(F.col('postcode').cast("integer") <= 9999)
 
 # gender should be Male, Female or Undisclosed
-result = result.filter((F.col("gender") == "Male")|(F.col("gender") == "Female")|(F.col("gender") == "Undisclosed"))
+result = result.filter((F.col("gender") == "Male")|
+    (F.col("gender") == "Female")|(F.col("gender") == "Undisclosed"))
 
 # revenue level should be a, b, c, d or e
-result = result.filter((F.col("revenue") == "a")|(F.col("revenue") == "b")|(F.col("revenue") == "c")|
-                       (F.col("revenue") == "d")|(F.col("revenue") == "e"))
+result = result.filter((F.col("revenue") == "a")|
+    (F.col("revenue") == "b")|(F.col("revenue") == "c")|
+    (F.col("revenue") == "d")|(F.col("revenue") == "e"))
 
 # rate should be between 0 and 1
 result = result.withColumn("rate", F.col("rate").cast("double"))
@@ -235,28 +273,11 @@ result = result.filter((F.col("rate") >= 0)&(F.col("rate") <= 1))
 # drop duplicate orders
 result = result.dropDuplicates(['order_id'])
 
-# the probabilities must be between 0 and 1 and of float value.
+# the probabilities must be between 0 and 1 and be floats.
 result = result.withColumn('merchant_fraud_probability', 
     F.round(F.col('merchant_fraud_probability').cast('double')/100, 2))
 result = result.withColumn('user_fraud_probability', 
     F.round(F.col('user_fraud_probability').cast('double')/100, 2))
-
-# impute `merchant_fraud_probability` Null Values 
-merchant_window = Window.partitionBy(["merchant_abn"])
-result = result.withColumn('merchant_fraud_probability',
-    F.when(F.col('merchant_fraud_probability').isNull(), 
-    F.avg(F.col('merchant_fraud_probability')).over(merchant_window))\
-        .otherwise(F.col('merchant_fraud_probability')))
-
-# impute `user_fraud_probability` Null Values 
-user_window = Window.partitionBy(["user_id"])
-result = result.withColumn('user_fraud_probability',
-    F.when(F.col('user_fraud_probability').isNull(), 
-    F.avg(F.col('user_fraud_probability')).over(user_window))\
-        .otherwise(F.col('user_fraud_probability')))
-
-# Uncomment the line below to replace rest missing probabilities with '0.5' as default value.
-# result = result.fillna(0.5, ['merchant_fraud_probability', 'user_fraud_probability'])
 
 # Writing data
 print('Writing processed data to file...')
