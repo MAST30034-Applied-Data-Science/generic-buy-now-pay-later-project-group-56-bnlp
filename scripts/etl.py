@@ -34,21 +34,21 @@ spark = (
     SparkSession.builder.appName("BNPL Project")
     .config("spark.sql.repl.eagerEval.enabled", True) 
     .config("spark.sql.parquet.cacheMetadata", "true")
-    .config("spark.driver.memory", "4g")
+    .config("spark.driver.memory", "8g")
     .config("spark.sql.session.timeZone", "Etc/UTC")
     .getOrCreate()
 )
 
 # Loading all given business related data sets
 
-merchants = spark.read.parquet("./data/tables/tbl_merchants.parquet")
-merchants_fraud_prob = spark.read.csv("./data/tables/merchant_fraud_probability.csv", sep = ',', header=True)
-consumer = spark.read.csv("./data/tables/tbl_consumer.csv", sep = '|', header=True)
-consumer_fraud_prob = spark.read.csv("./data/tables/consumer_fraud_probability.csv", sep = ',', header=True)
-userdetails = spark.read.parquet("./data/tables/consumer_user_details.parquet")
-transaction_batch1 = spark.read.parquet("./data/tables/transactions_20210228_20210827_snapshot/")
-transaction_batch2 = spark.read.parquet("./data/tables/transactions_20210828_20220227_snapshot/")
-transaction_batch3 = spark.read.parquet("./data/tables/transactions_20220228_20220828_snapshot/")
+merchants = spark.read.parquet("../data/tables/tbl_merchants.parquet")
+merchants_fraud_prob = spark.read.csv("../data/tables/merchant_fraud_probability.csv", sep = ',', header=True)
+consumer = spark.read.csv("../data/tables/tbl_consumer.csv", sep = '|', header=True)
+consumer_fraud_prob = spark.read.csv("../data/tables/consumer_fraud_probability.csv", sep = ',', header=True)
+userdetails = spark.read.parquet("../data/tables/consumer_user_details.parquet")
+transaction_batch1 = spark.read.parquet("../data/tables/transactions_20210228_20210827_snapshot/")
+transaction_batch2 = spark.read.parquet("../data/tables/transactions_20210828_20220227_snapshot/")
+transaction_batch3 = spark.read.parquet("../data/tables/transactions_20220228_20220828_snapshot/")
 
 
 """....EXTRACT ALL EXTERNAL DATASETS...."""
@@ -111,11 +111,15 @@ transactions = transaction_join2.withColumn('dollar_value', F.round('dollar_valu
 result = transactions.join(userdetails, on="user_id", how="left")
 result = result.join(consumer, on="consumer_id", how="left")
 result = result.join(spark.createDataFrame(merchants_pd), on="merchant_abn", how="left")
-result = result.join(merchants_fraud_prob, (result["merchant_abn"] == merchants_fraud_prob["abn"]) &
-                    (result["order_datetime"] == merchants_fraud_prob["datetime"]), how= 'left')\
+result = result.join(merchants_fraud_prob,
+                     on=[result["merchant_abn"] == merchants_fraud_prob["abn"],
+                         result["order_datetime"] == merchants_fraud_prob["datetime"]],
+                     how= 'left')\
                     .drop('abn', 'datetime')
-result = result.join(consumer_fraud_prob, (result["user_id"] == consumer_fraud_prob["user"]) &
-                    (result["order_datetime"] == consumer_fraud_prob["user_datetime"]), how= 'left')\
+
+result = result.join(consumer_fraud_prob,
+                     on=[(result["user_id"] == consumer_fraud_prob["user"]),
+                    (result["order_datetime"] == consumer_fraud_prob["user_datetime"])], how= 'left')\
                     .drop('user', 'user_datetime')
 
 # join external datasets with master
@@ -163,23 +167,6 @@ result = result.withColumn('merchant_fraud_probability',
 result = result.withColumn('user_fraud_probability', 
     F.round(F.col('user_fraud_probability').cast('double')/100, 2))
 
-# impute `merchant_fraud_probability` Null Values 
-merchant_window = Window.partitionBy(["merchant_abn"])
-result = result.withColumn('merchant_fraud_probability',
-    F.when(F.col('merchant_fraud_probability').isNull(), 
-    F.avg(F.col('merchant_fraud_probability')).over(merchant_window))\
-        .otherwise(F.col('merchant_fraud_probability')))
-
-# impute `user_fraud_probability` Null Values 
-user_window = Window.partitionBy(["user_id"])
-result = result.withColumn('user_fraud_probability',
-    F.when(F.col('user_fraud_probability').isNull(), 
-    F.avg(F.col('user_fraud_probability')).over(user_window))\
-        .otherwise(F.col('user_fraud_probability')))
-
-# Uncomment the line below to replace rest missing probabilities with '0.5' as default value.
-# result = result.fillna(0.5, ['merchant_fraud_probability', 'user_fraud_probability'])
-
 # Writing data
 print('Writing processed data to file...')
-result.write.mode('overwrite').parquet('./data/curated/process_data.parquet')
+result.write.mode('overwrite').parquet('../data/curated/process_data.parquet')
