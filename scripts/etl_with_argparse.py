@@ -4,6 +4,8 @@ and saves it under 'data/curated' directory
 """
 
 #Importing required libraries
+
+from decouple import config
 from pyspark.sql import SparkSession, Window, functions as F
 import nltk
 nltk.download('punkt')
@@ -134,8 +136,13 @@ with zipfile.ZipFile(target_dir,"r") as zip_ref:
 
 # 2) API call:
 # Set up API connection.
-WFS_USERNAME = 'xrjps'
-WFS_PASSWORD= 'Jmf16l4TcswU3Or7'
+
+
+WFS_USERNAME = config('username', default='')
+WFS_PASSWORD = config('password', default='')
+
+# WFS_USERNAME = 'xrjps'
+# WFS_PASSWORD = 'Jmf16l4TcswU3Or7'
 WFS_URL='https://adp.aurin.org.au/geoserver/wfs'
 
 adp_client = WebFeatureService(url=WFS_URL,username=WFS_USERNAME, 
