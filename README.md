@@ -10,7 +10,8 @@ It is important that you follow the steps outlined below for the pipeline to run
 
 1. Run 'requirements.txt' to download and install the necessary packages and modules for the python scripts and notebooks to run correctly.
 
-2. Store your personal API key in a '.env' file, following the steps below:\n
+2. Store your personal API key in a '.env' file, following the steps below:
+
    a) Goto AURIN's main page: https://aurin.org.au/ <br/>
    b) Click on "ACCESS NOW". <br/>
    c) Scroll down until you see the "ACCESS DASHBOARD" heading, then click on "CLICK TO LOGIN" underneath it. <br/>
