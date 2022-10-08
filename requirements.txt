@@ -6,6 +6,7 @@ fitter
 geopandas
 sklearn
 decouple
+python-decouple
 nltk
 folium
 requests
