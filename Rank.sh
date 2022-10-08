@@ -1,0 +1,1 @@
+python3 ./scripts/rank_merchant.py --N=$1
