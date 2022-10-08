@@ -31,13 +31,19 @@ It is important that you follow the steps outlined below for the pipeline to run
 
 ## Begin:
 
-To run the pipeline, please visit the `scripts` directory and run the files in order:
+1. To run the pipeline, simply enter the project on root level and run the following
+   `sh ETL.sh` 
+This will install all relavent python packages and run our ETL python script.
 
-1. 'etl.py' : This extracts and preprocesses all the raw data, then combines them into a single file 'process_data.parquet'. 
+2. To identify Top 'N' Merchants, run 
+   `sh Rank.sh [N]`
+This outputs the top [N] merchants by the 5 categories listed prior, in total
+providing [N * 5] merchants for BNPL bussiness to partner with. If [N] is not provided,
+then N = 10. i.e `sh Rank.sh` will return top 10 Merchants per category; `sh Rank.sh 15` will return
+top 15 and so on.
+
 
 ## NOTES:
-
-
 
 ## Authors:
 
