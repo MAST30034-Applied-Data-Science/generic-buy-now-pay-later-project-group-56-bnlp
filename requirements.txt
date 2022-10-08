@@ -1,3 +1,12 @@
 pyspark
-pandas
+matplotlib
+seaborn
+numpy
+fitter
+geopandas
+sklearn
+decouple
 nltk
+folium
+requests
+owslib
