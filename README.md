@@ -8,9 +8,7 @@ Include the PURPOSE and GOAL.
 
 It is important that you follow the steps outlined below for the pipeline to run correctly:
 
-1. Run 'requirements.txt' to download and install the necessary packages and modules for the python scripts and notebooks to run correctly.
-
-2. Store your personal API key in a '.env' file, following the steps below:
+Store your personal API key in a '.env' file, following the steps below:
 
    a) Goto AURIN's main page: https://aurin.org.au/ <br/>
    b) Click on "ACCESS NOW". <br/>
@@ -25,9 +23,6 @@ It is important that you follow the steps outlined below for the pipeline to run
    k) Write out your username and password from step "i)" in the .env file in the following format and save: <br/>
       username = "copy_and_paste_your_username_here" <br/>
       password = "copy_and_paste_your_password_here"
-
-- REMEMBER TO MANUALLY INCLUDE INCOME DATASET FILE.
-- REMEBER TO UNCOMMENT ".env" FROM THE .gitignore BEFORE SUBMITTING.
 
 ## Begin:
 
@@ -44,6 +39,10 @@ top 15 and so on.
 
 
 ## NOTES:
+
+- REMEMBER TO MANUALLY INCLUDE INCOME DATASET FILE.
+- Due to formatting issues and the inability to pull the Income Data through any sort of API, it has manually been put (DOUBLE CHECK WITH NOAH).
+- REMEBER TO UNCOMMENT ".env" FROM THE .gitignore BEFORE SUBMITTING.
 
 ## Authors:
 
