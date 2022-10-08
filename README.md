@@ -31,9 +31,10 @@ It is important that you follow the steps outlined below for the pipeline to run
 
 ## Begin:
 
-To run the pipeline, please visit the `scripts` directory and run the files in order:
+To run the pipeline, simply enter the project on root level and run the following
+`sh ETL.sh` 
+This will install all relavent python packages and run our ETL python script
 
-1. 'etl.py' : This extracts and preprocesses all the raw data, then combines them into a single file 'process_data.parquet'. 
 
 ## NOTES:
 
