@@ -57,7 +57,7 @@ gbt_mf = GBTRegressor(labelCol='merchant_fraud_probability',
                       predictionCol='merchant_fraud_prediction')
 
 
-def get_models(data):
+def get_models(data, model_path):
     '''
     fits the model on the data
     '''
@@ -84,6 +84,9 @@ def get_models(data):
     uf_model = gbt_uf.fit(ufTrainData)
     mf_model = gbt_mf.fit(mfTrainData)
 
+    # save the models
+    uf_model.write().overwrite().save(model_path + '/user_fraud_model')
+    mf_model.write().overwrite().save(model_path + '/merchant_fraud_model')
 
     return uf_model, mf_model
 
@@ -231,14 +234,11 @@ def get_dummy(df,categoricalCols,continuousCols,labelCol=None,master=False):
         return data_.select('features',labelCol, 'weights')
 
 
-def get_fraud_df(data):
+def get_fraud_df(data, uf_model, mf_model):
     '''
     uses GBT regressor models to predict fraud probabilities of
     the transaction dataset
     '''
-
-    # get models
-    uf_model, mf_model = get_models(data)
 
     # vectorize df
     data_v = vectorize_data(data)
