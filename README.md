@@ -2,7 +2,9 @@
 
 ## Description:
 
-Include the PURPOSE and GOAL.
+In a nutshell, the Buy Now Pay Later firm offers its services to their partenered merchants, which allows their customers to pay for items in five installments, instead of all upfront. The firm itself gets a small commission for every transaction the customer makes with the buy now pay later feature. However, due to limited resources, the firm is only able to onboard a handful of merchants to partner up with every year.
+
+Hence, the objective and purpose of this project is to rank those merchants based on how well they perform and how consistent they are with their sales, such that the profits for the firm are optimized.
 
 ## Before you run the pipeline:
 
@@ -28,7 +30,7 @@ Store your personal API key in a '.env' file, following the steps below:
 
 1. To run the pipeline, simply enter the project on root level and run the following
    `./ETL.sh` 
-This will install all relavent python packages and run our ETL python script.
+This will install all relevant python packages and run our ETL python script.
 
 2. To identify Top 'N' Merchants, run 
    `./Rank.sh [N]`
@@ -37,6 +39,7 @@ providing [N * 5] merchants for BNPL bussiness to partner with. If [N] is not pr
 then N = 10. i.e `./Rank.sh` will return top 10 Merchants per category; `./Rank.sh 15` will return
 top 15 and so on.
 
+(WHAT ABOUT TOP 100?)
 
 ## NOTES:
 
