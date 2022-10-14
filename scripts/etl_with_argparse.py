@@ -29,17 +29,22 @@ from etl_ext_datasets_funcs import etl_income
 from etl_ext_datasets_funcs import etl_population
 from etl_ext_datasets_funcs import join_ext_with_master
 from helper_functions import *
-from fraud_model_funcs import get_fraud_df
-
+from fraud_model_funcs import get_fraud_df, get_models
+from pyspark.ml.regression import GBTRegressionModel
 
 # argparse
 import argparse
 parser = argparse.ArgumentParser()
 parser.add_argument("--path", help="path to the datasets")
 parser.add_argument("--output", help="path to output file")
+parser.add_argument("--models", help="path to the models folder")
+parser.add_argument("--train_model", help="1 for training the model, 0 for using pre-trained")
 args = parser.parse_args()
 input_path = args.path
 output_path = args.output
+model_path = args.models
+is_train = args.train_model
+
 
 # Create a spark session
 spark = (
@@ -289,8 +294,18 @@ result = result.withColumn('merchant_fraud_probability',
 result = result.withColumn('user_fraud_probability', 
     F.round(F.col('user_fraud_probability').cast('double')/100, 2))
 
+# get models
+if is_train == '1':
+    # train the models
+    uf_model, mf_model = get_models(result, model_path)
+else:
+    uf_model = GBTRegressionModel.load(model_path + '/user_fraud_model')
+    mf_model = GBTRegressionModel.load(model_path + '/merchant_fraud_model')
+
 # model fraudulent transactions and remove them from df
-result = get_fraud_df(result).drop('isfraud')
+result = get_fraud_df(result,
+                      uf_model=uf_model,
+                      mf_model=mf_model).drop('isfraud')
 
 # Writing data
 print('Writing processed data to file...')
