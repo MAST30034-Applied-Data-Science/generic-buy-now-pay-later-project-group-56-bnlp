@@ -8,6 +8,7 @@ import argparse
 # argparse
 try: 
     parser = argparse.ArgumentParser()
+    parser.add_argument("--path", help="Path to Processed Data")
     parser.add_argument("--N", help="Number of Merchants per Category")
     args = parser.parse_args()
     N = int(args.N)
@@ -29,7 +30,7 @@ spark = (
 )
 
 # read in data
-sdf = spark.read.parquet("../data/curated/process_data.parquet/")
+sdf = spark.read.parquet(args.path)
 
 # select specified columns
 cols = ['merchant_name', 'user_id', 'dollar_value', 'order_datetime',\
