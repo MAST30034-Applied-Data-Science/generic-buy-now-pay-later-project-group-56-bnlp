@@ -4,7 +4,7 @@
 
 In a nutshell, the Buy Now Pay Later firm offers its services to their partenered merchants, which allows their customers to pay for items in five installments, instead of all upfront. The firm itself gets a small commission for every transaction the customer makes with the buy now pay later feature. However, due to limited resources, the firm is only able to onboard a handful of merchants to partner up with every year.
 
-Hence, the objective and purpose of this project is to rank those merchants based on how well they perform and how consistent they are with their sales, such that the profits for the firm are optimized.
+Hence, the objective and purpose of this project is to rank those merchants based on how well they perform and how consistent they are with their sales, such that the profits for the firm are optimized. In addition to this, a summary notebook is also included which summarises the overall approach taken, issues and obstacles that the team ran into, limitations/assumptions that were made, as well as recommendations to the client and stakeholders.
 
 ## Before you run the pipeline:
 
@@ -21,7 +21,7 @@ Store your personal API key in a '.env' file, following the steps below:
    g) Click on "Approve" and accept the terms and conditions. <br/>
    h) On the LHS, click on the "Data Provider" tab. <br/>
    i) Click on "Generate New Credentials". It will now show your Username and Password (hidden in asterisks). Click on "Show" to show your Password. <br/>
-   j) Make a new '.env' file under the 'scripts' directory. <br/>
+   j) Make a new '.env' file under the `scripts` directory. <br/>
    k) Write out your username and password from step "i)" in the .env file in the following format and save: <br/>
       username = "copy_and_paste_your_username_here" <br/>
       password = "copy_and_paste_your_password_here"
@@ -39,11 +39,11 @@ providing [N * 5] merchants for BNPL bussiness to partner with. If [N] is not pr
 then N = 10. i.e `./Rank.sh` will return top 10 Merchants per category; `./Rank.sh 15` will return
 top 15 and so on.
 
-3. The notebook  `summary.ipynb` in the notebooks folder gives a summary of the overall approach of the project as well as recommendations.
+3. The notebook `summary.ipynb` in the notebooks folder gives a summary of the overall approach of the project as well as recommendations.
 
 ## Notes:
 
-- Due to formatting issues and the inability to pull the Income Data through any sort of API, it has manually been put.
+- Due to formatting issues and the inability to pull the Income Data through any sort of API, it has manually been put in.
 
 ## Authors:
 
