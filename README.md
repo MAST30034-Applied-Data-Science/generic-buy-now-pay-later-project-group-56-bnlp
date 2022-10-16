@@ -41,7 +41,7 @@ top 15 and so on.
 
 (WHAT ABOUT TOP 100?)
 
-3. The notebook  `summary.ipynb` in the notebooks folder gives a summary of the overall approach of the project as well as reccomendations.
+3. The notebook  `summary.ipynb` in the notebooks folder gives a summary of the overall approach of the project as well as recommendations.
 
 ## NOTES:
 
