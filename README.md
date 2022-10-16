@@ -30,7 +30,7 @@ Store your personal API key in a '.env' file, following the steps below:
 
 1. To run the pipeline, simply enter the project on root level and run the following
    `./ETL.sh` 
-This will install all relevant python packages and run our ETL python script.
+This will install all relevant python packages and run our ETL python script. The file assumes that the datasets are located in the data/tables folder. If it is not, change the path in `./ETL.sh` after "--path" to the correct location of the datasets.
 
 2. To identify Top 'N' Merchants, run 
    `./Rank.sh [N]`
@@ -40,6 +40,8 @@ then N = 10. i.e `./Rank.sh` will return top 10 Merchants per category; `./Rank.
 top 15 and so on.
 
 (WHAT ABOUT TOP 100?)
+
+3. The notebook  `summary.ipynb` in the notebooks folder gives a summary of the overall approach of the project as well as reccomendations.
 
 ## NOTES:
 
