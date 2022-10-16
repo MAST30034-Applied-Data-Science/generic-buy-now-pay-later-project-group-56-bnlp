@@ -43,7 +43,8 @@ top 15 and so on.
 
 ## Notes:
 
-- Due to formatting issues and the inability to pull the Income Data through any sort of API, it has manually been put in.
+- Due to formatting issues and the inability to pull the Income Data through any sort of API, 
+it has been left under the external datasets as `income_data_raw.csv`.
 
 ## Authors:
 
