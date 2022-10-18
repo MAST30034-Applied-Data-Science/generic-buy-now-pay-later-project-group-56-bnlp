@@ -1,3 +1,5 @@
+# import required libraries
+
 import pandas as pd
 from pyspark.sql import SparkSession, functions as F
 from pyspark.ml.regression import GBTRegressor
@@ -23,14 +25,18 @@ base_features = {'dollar_value',
                  'revenue',
                  'rate'}
 
+# target features/variables
 target_features = {'user_fraud_probability', 'merchant_fraud_probability'}
 subset = base_features.union(target_features)
 
+# define categorical and continuous features
 categorical_cols = {'gender','revenue'}
 continous_cols = {'dollar_value', 'rate'}
 
+# target feature columns
 cols = ["user_fraud_prediction", "merchant_fraud_prediction"]
 
+# define GBT regressor models
 gbt_uf = GBTRegressor(labelCol='user_fraud_probability',
                       featuresCol="features",
                       maxIter=20,
@@ -51,7 +57,11 @@ gbt_mf = GBTRegressor(labelCol='merchant_fraud_probability',
                       predictionCol='merchant_fraud_prediction')
 
 
-def get_models(data):
+def get_models(data, model_path):
+    '''
+    fits the model on the data
+    '''
+
     # get the weightings of the data
     ud = get_weights(data, 'user_fraud_probability', 10)
     md = get_weights(data, 'merchant_fraud_probability', 5)
@@ -66,30 +76,43 @@ def get_models(data):
                  list(continous_cols),
                  labelCol='merchant_fraud_probability')
 
+    # train-test split
     (ufTrainData, ufTestData) = ud_v.randomSplit([0.9, 0.1])
     (mfTrainData, mfTestData) = md_v.randomSplit([0.9, 0.1])
 
+    # fit model
     uf_model = gbt_uf.fit(ufTrainData)
     mf_model = gbt_mf.fit(mfTrainData)
 
+    # save the models
+    uf_model.write().overwrite().save(model_path + '/user_fraud_model')
+    mf_model.write().overwrite().save(model_path + '/merchant_fraud_model')
 
     return uf_model, mf_model
 
 
-# returns vectorized dataset for the required columns
 def vectorize_data(data):
+    '''
+    returns vectorized dataset for the required columns
+    '''
+
+    # vectorize
     start = time.time()
     data_v = get_dummy(data,
                      continuousCols=list(continous_cols),
                      categoricalCols=list(categorical_cols),
                      master=True)
 
-    print("Took {} seconds to vectorize {} rows".format(time.time() - start, data.count()))
+    print("Took {} seconds to vectorize {} rows"\
+        .format(time.time() - start, data.count()))
     return data_v
 
 
-# predicts frauds using the built models
 def predict_frauds(data, uf_model, mf_model):
+    '''
+    predicts frauds using the built models
+    '''
+
     # predict user probs from feature column
     data_ = mf_model.transform(data)
     data_ = uf_model.transform(data_)
@@ -98,17 +121,21 @@ def predict_frauds(data, uf_model, mf_model):
     data_ = data_.drop('features')
     return data_
 
-# create isfraudcols for user and merchant
 def find_frauds(data):
+    '''
+    creates isfraudcols for user and merchant datasets
+    '''
 
     # generate quantile bounds for each column
     bounds = {
         c: dict(
-            zip(["q1", "q3"], data.approxQuantile(c, [0.25, 0.75], 0.01))
+            zip(["q1", "q3"], 
+            data.approxQuantile(c, [0.25, 0.75], 0.01))
         )
         for c in cols
     }
 
+    # define lower and upper bounds
     for c in bounds:
         iqr = bounds[c]['q3'] - bounds[c]['q1']
         bounds[c]['lower'] = bounds[c]['q1'] - (iqr * 1.5)
@@ -131,18 +158,23 @@ def find_frauds(data):
         "*",
         *[
             F.when(
-                (F.col('user_fraud_prediction_out') != 1) | (F.col('merchant_fraud_prediction_out') != 1),
+                (F.col('user_fraud_prediction_out') != 1) |
+                (F.col('merchant_fraud_prediction_out') != 1),
                 0
             ).otherwise(1).alias('isfraud')
         ]
     )
 
     # drop unneeded cols
-    data_ = data_.drop(*['user_fraud_prediction_out', 'merchant_fraud_prediction_out'])
+    data_ = data_.\
+        drop(*['user_fraud_prediction_out', 'merchant_fraud_prediction_out'])
     return data_
 
 
 def get_weights(df1, label, n):
+    '''
+    gets the weightings of the data
+    '''
 
     # drop rows with missing label
     df = df1.na.drop(subset=[label]).toPandas()
@@ -162,24 +194,36 @@ def get_weights(df1, label, n):
 
 
 
-def get_dummy(df,categoricalCols,continuousCols,labelCol=None, master=False):
+def get_dummy(df,categoricalCols,continuousCols,labelCol=None,master=False):
+    '''
+    Prepares the dataframe for the regressor model by
+    vectorising its features
+    '''
 
-    indexers = [ StringIndexer(inputCol=c, outputCol="{0}_indexed".format(c))
-                 for c in categoricalCols ]
+    # define string indexer function
+    indexers = [StringIndexer(inputCol=c, outputCol="{0}_indexed".format(c))
+                 for c in categoricalCols]
 
+    # one hot encode
     # default setting: dropLast=True
     encoders = [ OneHotEncoder(inputCol=indexer.getOutputCol(),
-                               outputCol="{0}_encoded".format(indexer.getOutputCol()))
+                               outputCol="{0}_encoded".\
+                                format(indexer.getOutputCol()))
                  for indexer in indexers ]
 
-    assembler = VectorAssembler(inputCols=[encoder.getOutputCol() for encoder in encoders]
-                                          + continuousCols, outputCol="features")
+    # define vector assembler function
+    assembler = VectorAssembler(inputCols=
+        [encoder.getOutputCol() for encoder in encoders] +
+        continuousCols, outputCol="features")
 
+    # define pipeline
     pipeline = Pipeline(stages=indexers + encoders + [assembler])
 
+    # carry out the pipeline
     model=pipeline.fit(df)
     data_ = model.transform(df)
 
+    # drop columns if required
     if master:
         for indexer in indexers:
             data_ = data_.drop(indexer.getOutputCol())
@@ -190,15 +234,18 @@ def get_dummy(df,categoricalCols,continuousCols,labelCol=None, master=False):
         return data_.select('features',labelCol, 'weights')
 
 
-def get_fraud_df(data):
-    # get models
-    uf_model, mf_model = get_models(data)
+def get_fraud_df(data, uf_model, mf_model):
+    '''
+    uses GBT regressor models to predict fraud probabilities of
+    the transaction dataset
+    '''
 
     # vectorize df
     data_v = vectorize_data(data)
     data_v = predict_frauds(data_v, uf_model, mf_model)
     data_v = find_frauds(data_v)
 
+    # remove fraud transactions
     data_fr = data_v.where(data_v['isfraud'] == 0)
     return data_fr
 
