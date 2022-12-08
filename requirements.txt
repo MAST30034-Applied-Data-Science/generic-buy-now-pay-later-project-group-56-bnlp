@@ -1,0 +1,12 @@
+pyspark
+matplotlib
+seaborn
+numpy
+fitter
+geopandas
+sklearn
+python-decouple
+nltk
+folium
+requests
+owslib

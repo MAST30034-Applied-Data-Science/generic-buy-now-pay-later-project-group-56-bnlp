@@ -1,0 +1,1 @@
+python3 ./scripts/rank_merchant.py --path ./data/curated/process_data.parquet --N=$1
